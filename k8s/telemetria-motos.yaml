@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telemetria-motos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: telemetria-motos
+  template:
+    metadata:
+      labels:
+        app: telemetria-motos
+    spec:
+      containers:
+        - name: telemetria-motos
+          image: localhost:5001/telemetria-motos:v1
+          imagePullPolicy: Always
+          env:
+            - name: CASSANDRA_HOST
+              value: "cassandra"
