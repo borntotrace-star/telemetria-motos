@@ -1,7 +1,6 @@
 # Real-Time Motorcycle Telemetry
 
-Learning project for real-time motorcycle telemetry, built with Kotlin, Ktor, and Apache Cassandra.
-
+A learning project that demonstrates an end-to-end telemetry platform for electric motorcycle fleets, built with Kotlin, Ktor, and Apache Cassandra.
 ## Architecture
 
 ```text
