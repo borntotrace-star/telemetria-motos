@@ -1,5 +1,7 @@
 package org.example
 
+import java.time.Instant
+
 data class Moto(
     val id: String,
     val matricula: String,
@@ -8,7 +10,8 @@ data class Moto(
     val velocidad: Double,
     val latitud: Double,
     val longitud: Double,
-    val estado: String
+    val estado: String,
+    val timestamp: Instant = Instant.now()
 )
 
 fun main() {

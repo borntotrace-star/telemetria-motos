@@ -1,21 +1,84 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: telemetria-motos
+  name: telemetria-api
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: telemetria-motos
+      app: telemetria-api
   template:
     metadata:
       labels:
-        app: telemetria-motos
+        app: telemetria-api
     spec:
       containers:
-        - name: telemetria-motos
-          image: localhost:5001/telemetria-motos:v1
-          imagePullPolicy: Always
+        - name: api
+          image: localhost:5001/telemetria-motos:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
           env:
             - name: CASSANDRA_HOST
-              value: "cassandra"
+              value: cassandra
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: telemetria-api
+spec:
+  selector:
+    app: telemetria-api
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telemetria-simulador
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: telemetria-simulador
+  template:
+    metadata:
+      labels:
+        app: telemetria-simulador
+    spec:
+      containers:
+        - name: simulador
+          image: localhost:5001/telemetria-motos:latest
+          imagePullPolicy: IfNotPresent
+          command: ["java", "-cp", "/app/app.jar", "org.example.SimuladorMainKt"]
+          env:
+            - name: CASSANDRA_HOST
+              value: cassandra
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi

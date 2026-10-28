@@ -1,6 +1,5 @@
 package org.example
 
-import com.datastax.oss.driver.api.core.CqlSession
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.*
 import io.ktor.server.engine.embeddedServer
@@ -8,8 +7,8 @@ import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.response.respond
 import io.ktor.server.routing.*
+import io.ktor.http.HttpStatusCode
 import kotlinx.serialization.Serializable
-import java.net.InetSocketAddress
 
 @Serializable
 data class MotoResponse(
@@ -20,29 +19,20 @@ data class MotoResponse(
     val velocidad: Double,
     val latitud: Double,
     val longitud: Double,
-    val estado: String
+    val estado: String,
+    val timestamp: String
 )
 
 fun main() {
 
-    val cassandraHost =
-        System.getenv("CASSANDRA_HOST") ?: "127.0.0.1"
-
-    val session = CqlSession.builder()
-        .addContactPoint(
-            InetSocketAddress(cassandraHost, 9042)
-        )
-        .withLocalDatacenter("datacenter1")
-        .withKeyspace("telemetria")
-        .build()
+    val session = CassandraConnection.open()
 
     val repository = MotoRepository(session)
 
     println("Conexión con Cassandra establecida")
-    println("Cassandra: $cassandraHost:9042")
     println("Iniciando API en puerto 8080...")
 
-    embeddedServer(
+    val server = embeddedServer(
         Netty,
         host = "0.0.0.0",
         port = 8080
@@ -53,6 +43,21 @@ fun main() {
         }
 
         routing {
+
+            get("/health/live") {
+                call.respond(mapOf("estado" to "activo"))
+            }
+
+            get("/health/ready") {
+                if (repository.comprobarConexion()) {
+                    call.respond(mapOf("estado" to "listo"))
+                } else {
+                    call.respond(
+                        HttpStatusCode.ServiceUnavailable,
+                        mapOf("estado" to "cassandra_no_disponible")
+                    )
+                }
+            }
 
             get("/") {
                 call.respond(
@@ -75,7 +80,8 @@ fun main() {
                         velocidad = moto.velocidad,
                         latitud = moto.latitud,
                         longitud = moto.longitud,
-                        estado = moto.estado
+                        estado = moto.estado,
+                        timestamp = moto.timestamp.toString()
                     )
                 }
 
@@ -87,7 +93,7 @@ fun main() {
                 val id = call.parameters["id"]
 
                 if (id == null) {
-                    call.respond(
+                    call.respond(HttpStatusCode.BadRequest,
                         mapOf("error" to "ID de moto obligatorio")
                     )
                     return@get
@@ -96,7 +102,7 @@ fun main() {
                 val moto = repository.obtenerMoto(id)
 
                 if (moto == null) {
-                    call.respond(
+                    call.respond(HttpStatusCode.NotFound,
                         mapOf("error" to "Moto no encontrada")
                     )
                     return@get
@@ -111,7 +117,8 @@ fun main() {
                         velocidad = moto.velocidad,
                         latitud = moto.latitud,
                         longitud = moto.longitud,
-                        estado = moto.estado
+                        estado = moto.estado,
+                        timestamp = moto.timestamp.toString()
                     )
                 )
             }
@@ -121,7 +128,7 @@ fun main() {
                 val id = call.parameters["id"]
 
                 if (id == null) {
-                    call.respond(
+                    call.respond(HttpStatusCode.BadRequest,
                         mapOf("error" to "ID de moto obligatorio")
                     )
                     return@get
@@ -138,7 +145,8 @@ fun main() {
                         velocidad = moto.velocidad,
                         latitud = moto.latitud,
                         longitud = moto.longitud,
-                        estado = moto.estado
+                        estado = moto.estado,
+                        timestamp = moto.timestamp.toString()
                     )
                 }
 
@@ -146,5 +154,12 @@ fun main() {
             }
         }
 
-    }.start(wait = true)
+    }
+
+    try {
+        server.start(wait = true)
+    } finally {
+        server.stop()
+        session.close()
+    }
 }

@@ -1,5 +1,6 @@
 package org.example
 
+import java.time.Instant
 import kotlin.random.Random
 
 class SimuladorMotos(
@@ -136,21 +137,22 @@ class SimuladorMotos(
                     }
                 }
 
-                motos[i] = nuevaMoto
+                val motoActualizada = nuevaMoto.copy(timestamp = Instant.now())
+                motos[i] = motoActualizada
 
                 // Guardar estado actual
-                repository.guardar(nuevaMoto)
+                repository.guardar(motoActualizada)
 
                 // Guardar histórico
-                repository.guardarTelemetria(nuevaMoto)
+                repository.guardarTelemetria(motoActualizada)
 
                 println(
-                    "${nuevaMoto.id} | " +
-                    "Velocidad: ${"%.1f".format(nuevaMoto.velocidad)} km/h | " +
-                    "Batería: ${nuevaMoto.bateria}% | " +
-                    "Estado: ${nuevaMoto.estado} | " +
-                    "Ubicación: ${"%.5f".format(nuevaMoto.latitud)}, " +
-                    "${"%.5f".format(nuevaMoto.longitud)}"
+                    "${motoActualizada.id} | " +
+                    "Velocidad: ${"%.1f".format(motoActualizada.velocidad)} km/h | " +
+                    "Batería: ${motoActualizada.bateria}% | " +
+                    "Estado: ${motoActualizada.estado} | " +
+                    "Ubicación: ${"%.5f".format(motoActualizada.latitud)}, " +
+                    "${"%.5f".format(motoActualizada.longitud)}"
                 )
             }
 
