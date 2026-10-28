@@ -1,6 +1,6 @@
 # Real-Time Motorcycle Telemetry
 
-Example application that simulates electric motorcycles, stores their current state and location history in Apache Cassandra, and exposes the data through an HTTP API built with Kotlin and Ktor.
+An end-to-end telemetry platform for electric motorcycle fleets, using Kotlin, Ktor, and Apache Cassandra.
 
 ## Architecture
 
